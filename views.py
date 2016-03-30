@@ -16,8 +16,6 @@ import webapp2
 from google.appengine.api import users
 from webapp2_extras import sessions
 
-from lib import format_datetime
-
 routes = []
 
 def route(path):
@@ -43,7 +41,6 @@ class BaseHandler(webapp2.RequestHandler):
 
   @webapp2.cached_property
   def session(self):
-    # Returns a session using the default cookie key.
     return self.session_store.get_session()
 
   def initialize(self, request, response):
@@ -61,7 +58,7 @@ class BaseHandler(webapp2.RequestHandler):
     self.response.out.write(html)
 
   def render_json(self, d):
-    json_txt = json.dumps(d, default=format_datetime)
+    json_txt = json.dumps(d)
     self.response.headers['Content-Type'] = 'application/json; charset=UTF-8'
     self.response.out.write(json_txt)
 
