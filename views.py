@@ -10,7 +10,7 @@ For example the *say_hello* handler, handling the URL route '/hello/<username>',
 
 """
 import json
-
+import cgi
 import jinja2
 import webapp2
 from google.appengine.api import users
@@ -69,19 +69,20 @@ class BaseHandler(webapp2.RequestHandler):
 @route('/')
 class Home(BaseHandler):
   def get(self):
-    self.render_html('home.html')
+    self.render_html('home.html',
+                     show_create=True)
 
-@route('/create')
-class Create(BaseHandler):
-  def get(self):
+@route('/edit/story')
+class EditStory(BaseHandler):
+  def post(self):
     if not self.user:
       self.redirect(users.create_login_url(self.request.uri))
       return
-    story, page1 = Story.create(self.user)
-    self.redirect(Edit.path_for(story, page1))
+    story = Story.create(self.user)
+    self.redirect(EditPage.path(story.key, story.page1_key))
 
 @route('/edit/story/(\d+)/page/(\d+)')
-class Edit(BaseHandler):
+class EditPage(BaseHandler):
   def get(self, story_id, page_id):
     story = Story.get_by_id(int(story_id))
     if not story:
@@ -90,15 +91,40 @@ class Edit(BaseHandler):
     if not page:
       self.abort(404)
     pages = list(Page.query(ancestor=story.key))
-    logging.info("page % summary: %s", pages[0].key.id(), pages[0].summary())
     self.render_html('edit.html',
                      story=story,
                      page=page,
                      pages=pages,
-                     path_for=Edit.path_for)
+                     edit_page_path=EditPage.path,
+                     add_page_path=AddPage.path)
+
+  def post(self, story_id, page_id):
+    story = Story.get_by_id(int(story_id))
+    if not story:
+      self.abort(404)
+    page = Page.get_by_id(int(page_id), parent=story.key)
+    if not page:
+      self.abort(404)
+    page.text = cgi.escape(self.request.get('text'))
+    page.put()
+    self.redirect(EditPage.path(story.key, page.key))
 
   @classmethod
-  def path_for(cls, story, page):
-    return '/edit/story/%s/page/%s' % (story.key.id(), page.key.id())
+  def path(cls, story_key, page_key):
+    return '/edit/story/%s/page/%s' % (story_key.id(), page_key.id())
+
+@route('/edit/story/(\d+)/page')
+class AddPage(BaseHandler):
+  def post(self, story_id):
+    story = Story.get_by_id(int(story_id))
+    if not story:
+      self.abort(404)
+    story, page = story.add_page()
+    logging.info('add page %s %s', story, page)
+    self.redirect(EditPage.path(story.key, page.key))
+
+  @classmethod
+  def path(cls, story_key):
+    return '/edit/story/%s/page' % story_key.id()
 
 

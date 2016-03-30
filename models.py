@@ -4,20 +4,24 @@ from google.appengine.ext import ndb
 class Story(ndb.Model):
   author = ndb.UserProperty(required=True)
   title = ndb.TextProperty(required=True)
-  page_1 = ndb.KeyProperty()
+  pages = ndb.IntegerProperty(default=1)
+  page1_key = ndb.KeyProperty()
+
+  @ndb.transactional()
+  def add_page(self):
+    self.pages += 1
+    page = Page.create(self, self.pages)
+    self.put()
+    return self, page
 
   @classmethod
   def create(cls, user):
-    story = Story(author=user, title="")
+    story = Story(author=user, title="Title of the Story", pages=1)
     story.put()
-    page_1 = Page.create(story)
-    story.page_1 = page_1.key
+    page1 = Page.create(story, story.pages)
+    story.page1_key = page1.key
     story.put()
-    return story, page_1
-
-  @classmethod
-  def find_by_key_string(cls, urlsafe_story_key):
-    ndb.Key(urlsafe=story_key_string)
+    return story
 
 
 class Choice(ndb.Model):
@@ -32,12 +36,16 @@ class Page(ndb.Model):
   choices = ndb.StructuredProperty(Choice, repeated=True)
 
   def summary(self, character_limit=100):
-    return self.text[:character_limit] + (
-      "..." if len(self.text) > character_limit else "")
+    return "%s. %s%s" % (
+      self.key.id(),
+      self.text[:character_limit],
+      "..." if len(self.text) > character_limit else ""
+    )
 
   @classmethod
-  def create(cls, story):
+  def create(cls, story, page_number):
     page = Page(parent=story.key,
+                id=page_number,
                 text="It was a dark and stormy night...")
     page.put()
     return page
