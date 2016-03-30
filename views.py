@@ -15,7 +15,8 @@ import jinja2
 import webapp2
 from google.appengine.api import users
 from webapp2_extras import sessions
-
+from models import Story, Page, Choice
+import logging
 routes = []
 
 def route(path):
@@ -48,12 +49,9 @@ class BaseHandler(webapp2.RequestHandler):
     self.session = sessions.get_store().get_session()
     self.user = users.get_current_user()
 
-  def write(self, *args, **kwargs):
-    self.response.out.write(*args, **kwargs)
-
   def render_html(self, template, **kwargs):
     jinja_template = jinja_env.get_template(template)
-    html = jinja_template.render(path=self.request.path,
+    html = jinja_template.render(user=self.user,
                                  **kwargs)
     self.response.out.write(html)
 
@@ -68,11 +66,39 @@ class BaseHandler(webapp2.RequestHandler):
       return self.request.get(args[0])
     return (self.request.get(arg) for arg in args)
 
-  def require_user(self):
-    self.redirect(users.create_login_url(self.request.uri))
-
 @route('/')
 class Home(BaseHandler):
   def get(self):
     self.render_html('home.html')
+
+@route('/create')
+class Create(BaseHandler):
+  def get(self):
+    if not self.user:
+      self.redirect(users.create_login_url(self.request.uri))
+      return
+    story, page1 = Story.create(self.user)
+    self.redirect(Edit.path_for(story, page1))
+
+@route('/edit/story/(\d+)/page/(\d+)')
+class Edit(BaseHandler):
+  def get(self, story_id, page_id):
+    story = Story.get_by_id(int(story_id))
+    if not story:
+      self.abort(404)
+    page = Page.get_by_id(int(page_id), parent=story.key)
+    if not page:
+      self.abort(404)
+    pages = list(Page.query(ancestor=story.key))
+    logging.info("page % summary: %s", pages[0].key.id(), pages[0].summary())
+    self.render_html('edit.html',
+                     story=story,
+                     page=page,
+                     pages=pages,
+                     path_for=Edit.path_for)
+
+  @classmethod
+  def path_for(cls, story, page):
+    return '/edit/story/%s/page/%s' % (story.key.id(), page.key.id())
+
 

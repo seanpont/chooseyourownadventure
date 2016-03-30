@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="row">
+  <div class="form-group">
+    <input type="text" class="form-control large_input" id="title" placeholder="Story Title">
+  </div>
+</div>
+<div class="row">
+  <div class="col-md-3">
+    <h3>Pages</h3>
+    {% for page in pages %}
+    <p>
+      <a href="{{ path_for(story, page) }}">{{ page.summary() }}</a>
+    </p>
+    {% endfor %}
+    <button class="btn btn-default" type="submit">Add Page</button>
+  </div>
+  <div class="col-md-9">
+    <h3>Content</h3>
+    <div class="form-group">
+      <textarea class="form-control" rows="3">{{ page.text }}</textarea>
+    </div>
+    <button class="btn btn-default" type="submit">Save</button>
+  </div>
+</div>
+
+<script>
+  console.log("Hello world");
+</script>
+
+{% endblock %}
+
+{% block style %}
+<style type="text/css">
+  .large_input {
+    font-size: 28px;
+    height: auto;
+  }
+</style>
+{% endblock %}
+

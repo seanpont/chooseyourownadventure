@@ -1,9 +1,10 @@
 import webapp2
 import views
+import models
 
 config = {
   'webapp2_extras.sessions': {
-    'secret_key': 'Made for Cedric and Alexia'
+    'secret_key': models.SiteConfig.get().secret_key
   }
 }
 
