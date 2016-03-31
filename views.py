@@ -16,6 +16,7 @@ import webapp2
 from google.appengine.api import users
 from webapp2_extras import sessions
 from models import Story, Page, Choice
+from google.appengine.datastore.datastore_query import Cursor
 import logging
 routes = []
 
@@ -66,11 +67,48 @@ class BaseHandler(webapp2.RequestHandler):
       return self.request.get(args[0])
     return (self.request.get(arg) for arg in args)
 
+  def get_story_page(self, story_id, page_id):
+    story = Story.get_by_id(int(story_id))
+    if not story:
+      self.abort(404)
+    page = Page.get_by_id(int(page_id), parent=story.key)
+    if not page:
+      self.abort(404)
+    return story, page
+
+
 @route('/')
 class Home(BaseHandler):
   def get(self):
+    curs = Cursor(urlsafe=self.session.get('cursor'))
+    stories, next_curs, more = Story.query().fetch_page(9, start_cursor=curs)
+    more_path = None
+    if more and next_curs:
+      more_path = "/?cursor=%s" % next_curs.urlsafe()
     self.render_html('home.html',
-                     show_create=True)
+                     show_create=True,
+                     stories=stories,
+                     read_page_path=ReadPage.path,
+                     edit_page_path=EditPage.path,
+                     more_path=more_path)
+
+@route('/read/story/(\d+)/page/(\d+)')
+class ReadPage(BaseHandler):
+  def get(self, story_id, page_id):
+    story = Story.get_by_id(int(story_id))
+    if not story:
+      self.abort(404)
+    page = Page.get_by_id(int(page_id), parent=story.key)
+    if not page:
+      self.abort(404)
+    self.render_html('read.html',
+                     story=story,
+                     page=page)
+
+  @classmethod
+  def path(cls, story_key, page_key):
+    logging.info('read page path %s %s', story_key, page_key)
+    return '/read/story/%s/page/%s' % (story_key.id(), page_key.id())
 
 @route('/edit/story')
 class EditStory(BaseHandler):
@@ -90,6 +128,8 @@ class EditPage(BaseHandler):
     page = Page.get_by_id(int(page_id), parent=story.key)
     if not page:
       self.abort(404)
+    if story.author != self.user:
+      self.abort(401)
     pages = list(Page.query(ancestor=story.key))
     self.render_html('edit.html',
                      story=story,
@@ -105,6 +145,8 @@ class EditPage(BaseHandler):
     page = Page.get_by_id(int(page_id), parent=story.key)
     if not page:
       self.abort(404)
+    if story.author != self.user:
+      self.abort(401)
     page.text = cgi.escape(self.request.get('text'))
     page.put()
     self.redirect(EditPage.path(story.key, page.key))
@@ -119,6 +161,8 @@ class AddPage(BaseHandler):
     story = Story.get_by_id(int(story_id))
     if not story:
       self.abort(404)
+    if story.author != self.user:
+      self.abort(401)
     story, page = story.add_page()
     logging.info('add page %s %s', story, page)
     self.redirect(EditPage.path(story.key, page.key))

@@ -1,5 +1,5 @@
 from google.appengine.ext import ndb
-
+import logging
 
 class Story(ndb.Model):
   author = ndb.UserProperty(required=True)
@@ -13,6 +13,13 @@ class Story(ndb.Model):
     page = Page.create(self, self.pages)
     self.put()
     return self, page
+
+  def summary(self, char_limit=300):
+    text = self.page1_key.get().text
+    return "%s%s" % (
+        text[:char_limit],
+        "..." if len(text) > char_limit else ""
+    )
 
   @classmethod
   def create(cls, user):
@@ -42,6 +49,20 @@ class Page(ndb.Model):
       "..." if len(self.text) > character_limit else ""
     )
 
+  def html_text(self):
+    return (self.text
+            .replace('\n', '<br>')
+            .replace('&lt;b&gt;', '<b>')
+            .replace('&lt;/b&gt;', '</b>')
+            .replace('&lt;i&gt;', '<i>')
+            .replace('&lt;/i&gt;', '</i>')
+            .replace('&lt;em&gt;', '<em>')
+            .replace('&lt;/em&gt;', '</em>')
+            .replace('&lt;u&gt;', '<u>')
+            .replace('&lt;/u&gt;', '</u>')
+    )
+
+
   @classmethod
   def create(cls, story, page_number):
     page = Page(parent=story.key,
@@ -56,8 +77,9 @@ class SiteConfig(ndb.Model):
 
   @classmethod
   def get(cls):
-    site_config = ndb.Key('SiteConfig', 'key').get()
+    site_config = ndb.Key('SiteConfig', 1).get()
     if not site_config:
-      site_config = SiteConfig(secret_key="Change Me!")
+      logging.info('Creating SiteConfig entry -- CHANGE SECRET KEY')
+      site_config = SiteConfig(id=1, secret_key="Change Me!")
       site_config.put_async()
     return site_config
