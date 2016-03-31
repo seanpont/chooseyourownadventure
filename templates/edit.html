@@ -1,5 +1,14 @@
 {% extends "base.html" %}
 
+{% block style %}
+<style type="text/css">
+  .large_input {
+    font-size: 28px;
+    height: auto;
+  }
+</style>
+{% endblock %}
+
 {% block content %}
 <div class="row">
   <div class="col-md-12">
@@ -30,19 +39,23 @@
     </form>
   </div>
 </div>
+{% endblock %}
 
+{% block script %}
 <script>
-  console.log("Hello world");
+  onchange('#title', function(title) {
+    console.log('Saving title: ' + title)
+    $.ajax({
+        method: "PUT",
+        url: "{{ edit_page_path(story.key, page.key) }}",
+        data: {
+          field_mask: "title",
+          title: title
+        }
+      })
+      .done(function( msg ) {
+        console.log( "Title Saved: " + msg );
+      });
+  })
 </script>
-
 {% endblock %}
-
-{% block style %}
-<style type="text/css">
-  .large_input {
-    font-size: 28px;
-    height: auto;
-  }
-</style>
-{% endblock %}
-

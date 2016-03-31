@@ -61,19 +61,15 @@ class BaseHandler(webapp2.RequestHandler):
     self.response.headers['Content-Type'] = 'application/json; charset=UTF-8'
     self.response.out.write(json_txt)
 
-  def params(self, *args):
-    """get request parameter(s)"""
-    if len(args) == 1:
-      return self.request.get(args[0])
-    return (self.request.get(arg) for arg in args)
-
-  def get_story_page(self, story_id, page_id):
+  def story_page(self, story_id, page_id, is_author=False):
     story = Story.get_by_id(int(story_id))
     if not story:
       self.abort(404)
     page = Page.get_by_id(int(page_id), parent=story.key)
     if not page:
       self.abort(404)
+    if is_author and story.author != self.user:
+      self.abort(401)
     return story, page
 
 
@@ -92,15 +88,11 @@ class Home(BaseHandler):
                      edit_page_path=EditPage.path,
                      more_path=more_path)
 
+
 @route('/read/story/(\d+)/page/(\d+)')
 class ReadPage(BaseHandler):
   def get(self, story_id, page_id):
-    story = Story.get_by_id(int(story_id))
-    if not story:
-      self.abort(404)
-    page = Page.get_by_id(int(page_id), parent=story.key)
-    if not page:
-      self.abort(404)
+    story, page = self.story_page(story_id, page_id)
     self.render_html('read.html',
                      story=story,
                      page=page)
@@ -109,6 +101,7 @@ class ReadPage(BaseHandler):
   def path(cls, story_key, page_key):
     logging.info('read page path %s %s', story_key, page_key)
     return '/read/story/%s/page/%s' % (story_key.id(), page_key.id())
+
 
 @route('/edit/story')
 class EditStory(BaseHandler):
@@ -119,17 +112,11 @@ class EditStory(BaseHandler):
     story = Story.create(self.user)
     self.redirect(EditPage.path(story.key, story.page1_key))
 
+
 @route('/edit/story/(\d+)/page/(\d+)')
 class EditPage(BaseHandler):
   def get(self, story_id, page_id):
-    story = Story.get_by_id(int(story_id))
-    if not story:
-      self.abort(404)
-    page = Page.get_by_id(int(page_id), parent=story.key)
-    if not page:
-      self.abort(404)
-    if story.author != self.user:
-      self.abort(401)
+    story, page = self.story_page(story_id, page_id, is_author=True)
     pages = list(Page.query(ancestor=story.key))
     self.render_html('edit.html',
                      story=story,
@@ -139,21 +126,20 @@ class EditPage(BaseHandler):
                      add_page_path=AddPage.path)
 
   def post(self, story_id, page_id):
-    story = Story.get_by_id(int(story_id))
-    if not story:
-      self.abort(404)
-    page = Page.get_by_id(int(page_id), parent=story.key)
-    if not page:
-      self.abort(404)
-    if story.author != self.user:
-      self.abort(401)
+    story, page = self.story_page(story_id, page_id, is_author=True)
     page.text = cgi.escape(self.request.get('text'))
     page.put()
     self.redirect(EditPage.path(story.key, page.key))
 
+  def put(self, story_id, page_id):
+    story, page = self.story_page(story_id, page_id, is_author=True)
+    logging.info('put page request params: %s', self.request.params)
+    self.request.params.get('field_mask')
+
   @classmethod
   def path(cls, story_key, page_key):
     return '/edit/story/%s/page/%s' % (story_key.id(), page_key.id())
+
 
 @route('/edit/story/(\d+)/page')
 class AddPage(BaseHandler):

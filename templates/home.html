@@ -17,22 +17,20 @@
 {% extends "base.html" %}
 
 {% block content %}
-<div class="row">
-  {% for story in stories %}
-  <div class="col-md-12 panel">
-    <a href="{{ read_page_path(story.key, story.page1_key) }}" class="no-dec">
-      <h2>{{ story.title }}</h2>
-      <p>{{ story.summary() }}</p>
-    </a>
-    {% if story.author == user %}
-    <p>
-      <a class="btn btn-default" href="{{ edit_page_path(story.key, story.page1_key) }}"
-         role="button">Edit</a>
-    </p>
-    {% endif %}
-  </div>
-  {% endfor %}
+{% for story in stories %}
+<div class="panel">
+  <a href="{{ read_page_path(story.key, story.page1_key) }}" class="no-dec">
+    <h2>{{ story.title }}</h2>
+    <p>{{ story.page1_key.get().html_text() }}</p>
+  </a>
+  {% if story.author == user %}
+  <p>
+    <a class="btn btn-default" href="{{ edit_page_path(story.key, story.page1_key) }}"
+       role="button">Edit</a>
+  </p>
+  {% endif %}
 </div>
+{% endfor %}
 {% if more_path %}
 <div class="row">
   <div class="col-md-4">
@@ -40,4 +38,10 @@
   </div>
 </div>
 {% endif %}
+{% endblock %}
+
+{% block script %}
+<script>
+
+</script>
 {% endblock %}
