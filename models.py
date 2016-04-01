@@ -7,20 +7,6 @@ class Story(ndb.Model):
   pages = ndb.IntegerProperty(default=1)
   page1_key = ndb.KeyProperty()
 
-  @ndb.transactional()
-  def add_page(self):
-    self.pages += 1
-    page = Page.create(self, self.pages)
-    self.put()
-    return self, page
-
-  def summary(self, char_limit=300):
-    text = self.page1_key.get().text
-    return "%s%s" % (
-        text[:char_limit],
-        "..." if len(text) > char_limit else ""
-    )
-
   @staticmethod
   @ndb.transactional()
   def create(user):
@@ -31,12 +17,34 @@ class Story(ndb.Model):
     story.put()
     return story
 
+  @ndb.transactional()
+  def add_page(self):
+    self.pages += 1
+    page = Page.create(self, self.pages)
+    self.put()
+    return page
+
+  @ndb.transactional()
+  def remove_page(self):
+    ndb.Key(Story, self.key.id(), Page, self.pages).delete()
+    self.pages -= 1
+    if self.pages > 0:
+      self.put()
+      return self
+    else:
+      self.key.delete()
+      return None
+
+  def summary(self):
+    page1 = self.page1_key.get()
+    return page1.html_text() if page1 else ""
+
 
 class Choice(ndb.Model):
   # parent = Page
   id = ndb.IntegerProperty()
   text = ndb.TextProperty(default="")
-  page = ndb.IntegerProperty(default=0)
+  page = ndb.IntegerProperty(default=1)
 
 
 class Page(ndb.Model):
@@ -61,11 +69,14 @@ class Page(ndb.Model):
             .replace('&lt;em&gt;', '<em>')
             .replace('&lt;/em&gt;', '</em>')
             .replace('&lt;u&gt;', '<u>')
-            .replace('&lt;/u&gt;', '</u>')
-    )
+            .replace('&lt;/u&gt;', '</u>'))
 
   def add_choice(self):
     self.choices.append(Choice(id=len(self.choices)))
+    self.put()
+
+  def remove_choice(self):
+    self.choices.pop()
     self.put()
 
   @staticmethod

@@ -175,20 +175,34 @@ class EditPage(BaseHandler):
 @route('/edit/story/(\d+)/page')
 class AddPage(BaseHandler):
   def post(self, story_id):
-    story = Story.get_by_id(int(story_id))
-    if not story:
-      self.abort(404)
-    if story.author != self.user:
-      self.abort(401)
-    story, page = story.add_page()
-    logging.info('add page %s %s', story, page)
+    story = self.story(story_id, is_author=True)
+    page = story.add_page()
     self.redirect(path_for('EditPage', story.key.id(), page.key.id()))
+
+
+@route('/edit/story/(\d+)/page:delete')
+class DeletePage(BaseHandler):
+  def post(self, story_id):
+    story = self.story(story_id, is_author=True)
+    story = story.remove_page()
+    if story:
+      self.redirect(path_for('EditPage', story.key.id(), story.page1_key.id()))
+    else:
+      self.redirect(path_for('Home'))
+
 
 @route('/edit/story/(\d+)/page/(\d+)/choice')
 class AddChoice(BaseHandler):
   def post(self, story_id, page_id):
     story, page = self.story_page(story_id, page_id, is_author=True)
     page.add_choice()
+    self.redirect(path_for('EditPage', story_id, page_id))
+
+@route('/edit/story/(\d+)/page/(\d+)/choice:delete')
+class DeleteChoice(BaseHandler):
+  def post(self, story_id, page_id):
+    story, page = self.story_page(story_id, page_id, is_author=True)
+    page.remove_choice()
     self.redirect(path_for('EditPage', story_id, page_id))
 
 @route('/edit/story/(\d+)/page/(\d+)/choice/(\d+)')

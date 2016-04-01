@@ -6,6 +6,10 @@
     font-size: 28px;
     height: auto;
   }
+  .choice-btn {
+    display: inline-block;
+    margin-right: 8px;
+  }
 </style>
 {% endblock %}
 
@@ -25,8 +29,11 @@
       <a href="{{ path_for('EditPage', story.key.id(), page.key.id()) }}">{{ page.summary(30) }}</a>
     </p>
     {% endfor %}
-    <form action="{{ path_for('AddPage', story.key.id()) }}" method="post">
+    <form class="choice-btn" action="{{ path_for('AddPage', story.key.id()) }}" method="post">
       <button type="submit" class="btn btn-default">Add page</button>
+    </form>
+    <form class="choice-btn" action="{{ path_for('DeletePage', story.key.id()) }}" method="post">
+      <button type="submit" class="btn btn-danger">Delete page</button>
     </form>
   </div>
   <div class="col-md-9">
@@ -51,9 +58,23 @@
       </select>
     </div>
     {% endfor %}
-    <form action="{{ path_for('AddChoice', story.key.id(), page.key.id()) }}" method="post">
+    <form class="choice-btn" action="{{ path_for('AddChoice', story.key.id(), page.key.id()) }}" method="post">
       <button type="submit" class="btn btn-default">Add Choice</button>
     </form>
+    <form class="choice-btn" action="{{ path_for('DeleteChoice', story.key.id(), page.key.id()) }}" method="post">
+      <button type="submit" class="btn btn-danger">Delete Choice</button>
+    </form>
+
+    <!--<form action="{{ path_for('AddChoice', story.key.id(), page.key.id()) }}" method="post">-->
+      <!--<div class="form-group">-->
+        <!--<button type="submit" class="btn btn-default">Add Choice</button>-->
+      <!--</div>-->
+    <!--</form>-->
+    <!--<form action="{{ path_for('DeleteChoice', story.key.id(), page.key.id()) }}" method="post">-->
+      <!--<div class="form-group">-->
+        <!--<button type="submit" class="btn btn-danger">Delete Choice</button>-->
+      <!--</div>-->
+    <!--</form>-->
   </div>
 </div>
 {% endblock %}

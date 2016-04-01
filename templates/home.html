@@ -15,7 +15,7 @@
      class="no-dec">
     <h2>{{ story.title }}</h2>
     <p class="author">By {{ story.author.nickname() }}</p>
-    <p>{{ story.page1_key.get().html_text() }}</p>
+    <p>{{ story.summary() }}</p>
   </a>
   {% if story.author == user %}
   <p>
