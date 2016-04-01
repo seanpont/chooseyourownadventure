@@ -15,6 +15,7 @@
   <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/css/bootstrap-theme.min.css"
         integrity="sha384-fLW2N01lMqjakBkx3l/M9EahuwpSfeNvV63J5ezn3uZzapT0u7EYsXMjQV+0En5r"
         crossorigin="anonymous">
+
   <style type="text/css">
     .footer {
       margin-top: 30px;
@@ -22,8 +23,15 @@
       color: #777;
       border-top: 1px solid #e5e5e5;
     }
+    .no-dec, .no-dec:hover, .no-dec:link {
+      color: inherit;
+      text-decoration: none;
+    }
   </style>
-  {% block style %}{% endblock %}
+
+  {% block style %}
+  {% endblock %}
+
 </head>
 <body role="document">
 
@@ -34,31 +42,32 @@
     </div>
     <div id="navbar" class="navbar-collapse collapse">
       {% if show_create %}
-      <form class="navbar-form navbar-left" action="/edit/story" method="post">
+      <form class="navbar-form navbar-left" action="{{ path_for('CreateStory') }}" method="post">
         <button type="submit" class="btn btn-default">Write a Story</button>
       </form>
       {% endif %}
       <ul class="nav navbar-nav navbar-right">
         {% if user %}
-        <li><a href="/account">{{ user.nickname() }}</a></li>
+        <li><a href="#account">{{ user.nickname() }}</a></li>
         {% else %}
-        <li><a href="/sign-in">Sign In</a></li>
+        <li><a href="{{ path_for('SignIn') }}">Sign In</a></li>
         {% endif %}
       </ul>
     </div>
   </div>
 </nav>
 
-
 <div class="container">
+
   {% block content%}
   {% endblock %}
 
   <footer class="footer">
-    <p class="pull-right">A PontLabs Production</p>
+    <a href="https://github.com/seanpont/chooseyourownadventure" class="pull-right no-dec">
+      A PontLabs Production
+    </a>
   </footer>
 </div>
-
 
 <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.3/jquery.min.js"></script>
 <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/js/bootstrap.min.js"
@@ -66,7 +75,7 @@
         crossorigin="anonymous"></script>
 
 <script>
-  function onchange(tag, fn) {
+  function onChange(tag, fn) {
     var $el = $(tag);
     var old_val = $el.val();
     setInterval(function() {
@@ -75,12 +84,13 @@
         fn(new_val);
         old_val = new_val;
       }
-    }, 1000);
+    }, 2000);
   }
 
-
 </script>
+
 {% block script %}
 {% endblock %}
+
 </body>
 </html>

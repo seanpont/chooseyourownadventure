@@ -9,28 +9,42 @@ For example the *say_hello* handler, handling the URL route '/hello/<username>',
   must be passed *username* as the argument.
 
 """
-import json
 import cgi
+import json
+import logging
+import re
+
 import jinja2
 import webapp2
 from google.appengine.api import users
-from webapp2_extras import sessions
-from models import Story, Page, Choice
 from google.appengine.datastore.datastore_query import Cursor
-import logging
+from google.appengine.ext import ndb
+from webapp2_extras import sessions
+
+from models import Story, Page
+
 routes = []
+handler_path = {}
 
 def route(path):
   """Use to annotate handlers. eg @route('/path')"""
   def wrap(handler):
     routes.append((path, handler))
+    handler_path[handler.__name__] = '%s'.join(re.compile('\(.+?\)').split(path))
     return handler
   return wrap
+
+
+def path_for(handler_name, *args):
+  """ Cheat code for getting path for a handler """
+  return handler_path[handler_name] % args
+
 
 jinja_env = jinja2.Environment(loader=jinja2.FileSystemLoader('templates'),
                                extensions=['jinja2.ext.autoescape',
                                            'jinja2.ext.loopcontrols',
                                            'jinja2.ext.with_'])
+
 
 class BaseHandler(webapp2.RequestHandler):
 
@@ -53,23 +67,36 @@ class BaseHandler(webapp2.RequestHandler):
   def render_html(self, template, **kwargs):
     jinja_template = jinja_env.get_template(template)
     html = jinja_template.render(user=self.user,
+                                 path_for=path_for,
                                  **kwargs)
     self.response.out.write(html)
 
+  @staticmethod
+  def json_serializer(obj):
+    if isinstance(obj, users.User):
+      return obj.email()
+    if isinstance(obj, ndb.Key):
+      return obj.urlsafe()
+    raise TypeError('%s is not serializable and has no default' % obj)
+
   def render_json(self, d):
-    json_txt = json.dumps(d)
+    json_txt = json.dumps(d, default=BaseHandler.json_serializer)
     self.response.headers['Content-Type'] = 'application/json; charset=UTF-8'
     self.response.out.write(json_txt)
 
-  def story_page(self, story_id, page_id, is_author=False):
+  def story(self, story_id, is_author=False):
     story = Story.get_by_id(int(story_id))
     if not story:
       self.abort(404)
+    if is_author and story.author != self.user:
+      self.abort(401)
+    return story
+
+  def story_page(self, story_id, page_id, is_author=False):
+    story = self.story(story_id, is_author)
     page = Page.get_by_id(int(page_id), parent=story.key)
     if not page:
       self.abort(404)
-    if is_author and story.author != self.user:
-      self.abort(401)
     return story, page
 
 
@@ -84,9 +111,16 @@ class Home(BaseHandler):
     self.render_html('home.html',
                      show_create=True,
                      stories=stories,
-                     read_page_path=ReadPage.path,
-                     edit_page_path=EditPage.path,
                      more_path=more_path)
+
+
+@route('/sign-in')
+class SignIn(BaseHandler):
+  def get(self):
+    if not self.user:
+      self.redirect(users.create_login_url('/'))
+    else:
+      self.redirect('/#account')
 
 
 @route('/read/story/(\d+)/page/(\d+)')
@@ -97,20 +131,26 @@ class ReadPage(BaseHandler):
                      story=story,
                      page=page)
 
-  @classmethod
-  def path(cls, story_key, page_key):
-    logging.info('read page path %s %s', story_key, page_key)
-    return '/read/story/%s/page/%s' % (story_key.id(), page_key.id())
-
 
 @route('/edit/story')
-class EditStory(BaseHandler):
+class CreateStory(BaseHandler):
   def post(self):
     if not self.user:
       self.redirect(users.create_login_url(self.request.uri))
       return
     story = Story.create(self.user)
-    self.redirect(EditPage.path(story.key, story.page1_key))
+    self.redirect(path_for('EditPage', story.key.id(), story.page1_key.id()))
+
+
+@route('/edit/story/(\d+)')
+class EditStory(BaseHandler):
+  def put(self, story_id):
+    story = self.story(story_id, is_author=True)
+    field_mask = self.request.get('field_mask')
+    if 'title' in field_mask:
+      story.title = self.request.get('title')
+    story.put()
+    self.render_json(story.to_dict())
 
 
 @route('/edit/story/(\d+)/page/(\d+)')
@@ -121,24 +161,15 @@ class EditPage(BaseHandler):
     self.render_html('edit.html',
                      story=story,
                      page=page,
-                     pages=pages,
-                     edit_page_path=EditPage.path,
-                     add_page_path=AddPage.path)
-
-  def post(self, story_id, page_id):
-    story, page = self.story_page(story_id, page_id, is_author=True)
-    page.text = cgi.escape(self.request.get('text'))
-    page.put()
-    self.redirect(EditPage.path(story.key, page.key))
+                     pages=pages)
 
   def put(self, story_id, page_id):
     story, page = self.story_page(story_id, page_id, is_author=True)
-    logging.info('put page request params: %s', self.request.params)
-    self.request.params.get('field_mask')
-
-  @classmethod
-  def path(cls, story_key, page_key):
-    return '/edit/story/%s/page/%s' % (story_key.id(), page_key.id())
+    field_mask = self.request.get('field_mask')
+    if 'text' in field_mask:
+      page.text = cgi.escape(self.request.get('text'))
+    page.put()
+    self.render_json(page.to_dict())
 
 
 @route('/edit/story/(\d+)/page')
@@ -151,10 +182,5 @@ class AddPage(BaseHandler):
       self.abort(401)
     story, page = story.add_page()
     logging.info('add page %s %s', story, page)
-    self.redirect(EditPage.path(story.key, page.key))
-
-  @classmethod
-  def path(cls, story_key):
-    return '/edit/story/%s/page' % story_key.id()
-
+    self.redirect(path_for('EditPage', story.key.id(), page.key.id()))
 

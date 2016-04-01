@@ -19,13 +19,14 @@
 {% block content %}
 {% for story in stories %}
 <div class="panel">
-  <a href="{{ read_page_path(story.key, story.page1_key) }}" class="no-dec">
+  <a href="{{ path_for('ReadPage', story.key.id(), story.page1_key.id()) }}"
+     class="no-dec">
     <h2>{{ story.title }}</h2>
     <p>{{ story.page1_key.get().html_text() }}</p>
   </a>
   {% if story.author == user %}
   <p>
-    <a class="btn btn-default" href="{{ edit_page_path(story.key, story.page1_key) }}"
+    <a class="btn btn-default" href="{{ path_for('EditPage', story.key.id(), story.page1_key.id()) }}"
        role="button">Edit</a>
   </p>
   {% endif %}

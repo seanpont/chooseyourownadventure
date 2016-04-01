@@ -6,6 +6,10 @@
     font-size: 28px;
     height: auto;
   }
+  #autosaved {
+    color: #AAAAAA;
+    margin-left: 12px;
+  }
 </style>
 {% endblock %}
 
@@ -22,40 +26,48 @@
     <h3>Pages</h3>
     {% for page in pages %}
     <p>
-      <a href="{{ edit_page_path(story.key, page.key) }}">{{ page.summary() }}</a>
+      <a href="{{ path_for('EditPage', story.key.id(), page.key.id()) }}">{{ page.summary(30) }}</a>
     </p>
     {% endfor %}
-    <form action="{{ add_page_path(story.key) }}" method="post">
+    <form action="{{ path_for('AddPage', story.key.id()) }}" method="post">
       <button type="submit" class="btn btn-default">Add page</button>
     </form>
   </div>
   <div class="col-md-9">
     <h3>Content</h3>
-    <form action="{{ edit_page_path(story.key, page.key) }}" method="post">
-      <div class="form-group">
-        <textarea class="form-control" rows="12" name="text">{{ page.text }}</textarea>
-      </div>
-      <button type="submit" class="btn btn-default">Save</button>
-    </form>
+    <div class="form-group">
+      <textarea id="page-text" class="form-control" rows="12" name="text">{{ page.text }}</textarea>
+    </div>
   </div>
 </div>
 {% endblock %}
 
 {% block script %}
 <script>
-  onchange('#title', function(title) {
-    console.log('Saving title: ' + title)
+
+  var $autosaved = $('#autosaved');
+
+  onChange('#title', function(title) {
     $.ajax({
         method: "PUT",
-        url: "{{ edit_page_path(story.key, page.key) }}",
+        url: "{{ path_for('EditStory', story.key.id()) }}",
         data: {
           field_mask: "title",
           title: title
         }
-      })
-      .done(function( msg ) {
-        console.log( "Title Saved: " + msg );
       });
-  })
+  });
+
+  onChange("#page-text", function(text) {
+    $.ajax({
+        method: "PUT",
+        url: "{{ path_for('EditPage', story.key.id(), page.key.id()) }}",
+        data: {
+          field_mask: "text",
+          text: text
+        }
+      });
+  });
+
 </script>
 {% endblock %}
