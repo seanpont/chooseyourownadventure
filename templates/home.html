@@ -1,8 +1,7 @@
 {% block style %}
 <style type="text/css">
-  .no-dec, .no-dec:hover, .no-dec:link {
-    color: inherit;
-    text-decoration: none;
+  .author {
+    color: gray;
   }
 </style>
 {% endblock %}
@@ -15,6 +14,7 @@
   <a href="{{ path_for('ReadPage', story.key.id(), story.page1_key.id()) }}"
      class="no-dec">
     <h2>{{ story.title }}</h2>
+    <p class="author">By {{ story.author.nickname() }}</p>
     <p>{{ story.page1_key.get().html_text() }}</p>
   </a>
   {% if story.author == user %}

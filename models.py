@@ -3,7 +3,7 @@ import logging
 
 class Story(ndb.Model):
   author = ndb.UserProperty(required=True)
-  title = ndb.TextProperty(required=True)
+  title = ndb.TextProperty(default="")
   pages = ndb.IntegerProperty(default=1)
   page1_key = ndb.KeyProperty()
 
@@ -21,9 +21,10 @@ class Story(ndb.Model):
         "..." if len(text) > char_limit else ""
     )
 
-  @classmethod
-  def create(cls, user):
-    story = Story(author=user, title="Title of the Story", pages=1)
+  @staticmethod
+  @ndb.transactional()
+  def create(user):
+    story = Story(author=user)
     story.put()
     page1 = Page.create(story, story.pages)
     story.page1_key = page1.key
@@ -67,12 +68,9 @@ class Page(ndb.Model):
     self.choices.append(Choice(id=len(self.choices)))
     self.put()
 
-
-  @classmethod
-  def create(cls, story, page_number):
-    page = Page(parent=story.key,
-                id=page_number,
-                text="It was a dark and stormy night...")
+  @staticmethod
+  def create(story, page_number):
+    page = Page(parent=story.key, id=page_number)
     page.put()
     return page
 
@@ -80,8 +78,8 @@ class Page(ndb.Model):
 class SiteConfig(ndb.Model):
   secret_key = ndb.StringProperty(required=True)
 
-  @classmethod
-  def get(cls):
+  @staticmethod
+  def get():
     site_config = ndb.Key('SiteConfig', 1).get()
     if not site_config:
       logging.info('Creating SiteConfig entry -- CHANGE SECRET KEY')

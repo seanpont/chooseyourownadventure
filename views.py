@@ -21,7 +21,7 @@ from google.appengine.datastore.datastore_query import Cursor
 from google.appengine.ext import ndb
 from webapp2_extras import sessions
 
-from models import Story, Page, Choice
+from models import Story, Page
 
 routes = []
 handler_path = {}
@@ -109,7 +109,7 @@ class Home(BaseHandler):
     if more and next_curs:
       more_path = "/?cursor=%s" % next_curs.urlsafe()
     self.render_html('home.html',
-                     show_create=True,
+                     show_create=(self.user is not None),
                      stories=stories,
                      more_path=more_path)
 
@@ -136,7 +136,7 @@ class ReadPage(BaseHandler):
 class CreateStory(BaseHandler):
   def post(self):
     if not self.user:
-      self.redirect(users.create_login_url(self.request.uri))
+      self.redirect(users.create_login_url(path_for('Home')))
       return
     story = Story.create(self.user)
     self.redirect(path_for('EditPage', story.key.id(), story.page1_key.id()))
