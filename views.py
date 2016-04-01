@@ -148,7 +148,7 @@ class EditStory(BaseHandler):
     story = self.story(story_id, is_author=True)
     field_mask = self.request.get('field_mask')
     if 'title' in field_mask:
-      story.title = self.request.get('title')
+      story.title = cgi.escape(self.request.get('title'))
     story.put()
     self.render_json(story.to_dict())
 
@@ -212,7 +212,7 @@ class EditChoice(BaseHandler):
     choice = page.choices[int(choice_id)]
     field_mask = self.request.get('field_mask')
     if 'text' in field_mask:
-      choice.text = self.request.get('text')
+      choice.text = cgi.escape(self.request.get('text'))
     if 'page' in field_mask:
       choice.page = int(self.request.get('page'))
     page.put()
