@@ -21,7 +21,7 @@ from google.appengine.datastore.datastore_query import Cursor
 from google.appengine.ext import ndb
 from webapp2_extras import sessions
 
-from models import Story, Page
+from models import Story, Page, Choice
 
 routes = []
 handler_path = {}
@@ -184,3 +184,22 @@ class AddPage(BaseHandler):
     logging.info('add page %s %s', story, page)
     self.redirect(path_for('EditPage', story.key.id(), page.key.id()))
 
+@route('/edit/story/(\d+)/page/(\d+)/choice')
+class AddChoice(BaseHandler):
+  def post(self, story_id, page_id):
+    story, page = self.story_page(story_id, page_id, is_author=True)
+    page.add_choice()
+    self.redirect(path_for('EditPage', story_id, page_id))
+
+@route('/edit/story/(\d+)/page/(\d+)/choice/(\d+)')
+class EditChoice(BaseHandler):
+  def put(self, story_id, page_id, choice_id):
+    story, page = self.story_page(story_id, page_id, is_author=True)
+    choice = page.choices[int(choice_id)]
+    field_mask = self.request.get('field_mask')
+    if 'text' in field_mask:
+      choice.text = self.request.get('text')
+    if 'page' in field_mask:
+      choice.page = int(self.request.get('page'))
+    page.put()
+    self.render_json(choice.to_dict())

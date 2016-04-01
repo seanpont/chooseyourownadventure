@@ -1,14 +1,27 @@
 {% extends "base.html" %}
 
 {% block content %}
-<div class="row">
-  <div class="col-md-12">
-    <h2>{{ story.title }}</h2>
-  </div>
+
+<div class="panel">
+  <h2>{{ story.title }}</h2>
+
+  <p>{{ page.html_text() }}</p>
+
+  {% for choice in page.choices %}
+  <p>
+    <a href="{{ path_for('ReadPage', story.key.id(), choice.page) }}">
+      {{ choice.text }}
+    </a>
+  </p>
+  {% endfor %}
+
+  {% if not page.choices %}
+  <p>
+    <a href="{{ path_for('ReadPage', story.key.id(), 1) }}">
+      Try again.
+    </a>
+  </p>
+  {% endif %}
 </div>
-<div class="row">
-  <div class="col-md-12">
-    <p>{{ page.html_text() }}</p>
-  </div>
-</div>
+
 {% endblock %}

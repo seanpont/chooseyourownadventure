@@ -33,13 +33,14 @@ class Story(ndb.Model):
 
 class Choice(ndb.Model):
   # parent = Page
-  text = ndb.TextProperty()
-  page = ndb.KeyProperty()
+  id = ndb.IntegerProperty()
+  text = ndb.TextProperty(default="")
+  page = ndb.IntegerProperty(default=0)
 
 
 class Page(ndb.Model):
   # parent = Story
-  text = ndb.TextProperty(required=True)
+  text = ndb.TextProperty(default="")
   choices = ndb.StructuredProperty(Choice, repeated=True)
 
   def summary(self, character_limit=100):
@@ -61,6 +62,10 @@ class Page(ndb.Model):
             .replace('&lt;u&gt;', '<u>')
             .replace('&lt;/u&gt;', '</u>')
     )
+
+  def add_choice(self):
+    self.choices.append(Choice(id=len(self.choices)))
+    self.put()
 
 
   @classmethod
