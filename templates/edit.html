@@ -21,7 +21,10 @@
     </div>
   </div>
 </div>
+
 <div class="row">
+
+  <!-- Sidebar with all pages -->
   <div class="col-md-3">
     <h3>Pages</h3>
     {% for page in pages %}
@@ -30,18 +33,24 @@
     </p>
     {% endfor %}
     <form class="choice-btn" action="{{ path_for('AddPage', story.key.id()) }}" method="post">
+      <input type="hidden" name="current_page" value="{{ page.key.id() }}">
       <button type="submit" class="btn btn-default">Add page</button>
     </form>
     <form class="choice-btn" action="{{ path_for('DeletePage', story.key.id()) }}" method="post">
       <button type="submit" class="btn btn-danger">Delete page</button>
     </form>
   </div>
+
+  <!-- Main page editor -->
   <div class="col-md-9">
     <h3>Page {{ page.key.id() }}</h3>
+
+    <!-- Content editor -->
     <div class="form-group">
       <textarea id="page-text" class="form-control" rows="12" name="text">{{ page.text }}</textarea>
     </div>
 
+    <!-- Choice editor -->
     {% for choice in page.choices %}
     <div class="form-group">
       <label for="choice_{{ choice.id }}_text">Performing action:</label>
@@ -52,8 +61,8 @@
       <select id="choice_{{ choice.id }}_page" class="form-control">
         {% for page in pages %}
         <option value="{{ page.key.id() }}"
-                {% if choice.page == page.key.id() %} selected {% endif %}>
-          {{ page.summary(30) }}</option>
+            {% if choice.page == page.key.id() %} selected {% endif %}
+            >{{ page.summary(30) }}</option>
         {% endfor %}
       </select>
     </div>
@@ -65,19 +74,10 @@
       <button type="submit" class="btn btn-danger">Delete Choice</button>
     </form>
 
-    <!--<form action="{{ path_for('AddChoice', story.key.id(), page.key.id()) }}" method="post">-->
-      <!--<div class="form-group">-->
-        <!--<button type="submit" class="btn btn-default">Add Choice</button>-->
-      <!--</div>-->
-    <!--</form>-->
-    <!--<form action="{{ path_for('DeleteChoice', story.key.id(), page.key.id()) }}" method="post">-->
-      <!--<div class="form-group">-->
-        <!--<button type="submit" class="btn btn-danger">Delete Choice</button>-->
-      <!--</div>-->
-    <!--</form>-->
   </div>
 </div>
 {% endblock %}
+
 
 {% block script %}
 <script>

@@ -17,9 +17,7 @@ import re
 import jinja2
 import webapp2
 from google.appengine.api import users
-from google.appengine.datastore.datastore_query import Cursor
 from google.appengine.ext import ndb
-from webapp2_extras import sessions
 
 from models import Story, Page
 
@@ -48,20 +46,8 @@ jinja_env = jinja2.Environment(loader=jinja2.FileSystemLoader('templates'),
 
 class BaseHandler(webapp2.RequestHandler):
 
-  def dispatch(self):
-    self.session_store = sessions.get_store(request=self.request)
-    try:
-      webapp2.RequestHandler.dispatch(self)
-    finally:
-      self.session_store.save_sessions(self.response)
-
-  @webapp2.cached_property
-  def session(self):
-    return self.session_store.get_session()
-
   def initialize(self, request, response):
     super(BaseHandler, self).initialize(request, response)
-    self.session = sessions.get_store().get_session()
     self.user = users.get_current_user()
 
   def render_html(self, template, **kwargs):
@@ -103,15 +89,10 @@ class BaseHandler(webapp2.RequestHandler):
 @route('/')
 class Home(BaseHandler):
   def get(self):
-    curs = Cursor(urlsafe=self.session.get('cursor'))
-    stories, next_curs, more = Story.query().fetch_page(9, start_cursor=curs)
-    more_path = None
-    if more and next_curs:
-      more_path = "/?cursor=%s" % next_curs.urlsafe()
+    stories = Story.query().fetch()
     self.render_html('home.html',
                      show_create=(self.user is not None),
-                     stories=stories,
-                     more_path=more_path)
+                     stories=stories)
 
 
 @route('/sign-in')
@@ -171,13 +152,13 @@ class EditPage(BaseHandler):
     page.put()
     self.render_json(page.to_dict())
 
-
 @route('/edit/story/(\d+)/page')
 class AddPage(BaseHandler):
   def post(self, story_id):
     story = self.story(story_id, is_author=True)
     page = story.add_page()
-    self.redirect(path_for('EditPage', story.key.id(), page.key.id()))
+    page_id = self.request.get('current_page', page.key.id())
+    self.redirect(path_for('EditPage', story.key.id(), page_id))
 
 
 @route('/edit/story/(\d+)/page:delete')
@@ -198,12 +179,14 @@ class AddChoice(BaseHandler):
     page.add_choice()
     self.redirect(path_for('EditPage', story_id, page_id))
 
+
 @route('/edit/story/(\d+)/page/(\d+)/choice:delete')
 class DeleteChoice(BaseHandler):
   def post(self, story_id, page_id):
     story, page = self.story_page(story_id, page_id, is_author=True)
     page.remove_choice()
     self.redirect(path_for('EditPage', story_id, page_id))
+
 
 @route('/edit/story/(\d+)/page/(\d+)/choice/(\d+)')
 class EditChoice(BaseHandler):

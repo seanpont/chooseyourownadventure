@@ -9,6 +9,7 @@
 {% extends "base.html" %}
 
 {% block content %}
+
 {% for story in stories %}
 <div class="panel">
   <a href="{{ path_for('ReadPage', story.key.id(), story.page1_key.id()) }}"
@@ -25,13 +26,7 @@
   {% endif %}
 </div>
 {% endfor %}
-{% if more_path %}
-<div class="row">
-  <div class="col-md-4">
-    <a href="{{ more_path }}">More...</a>
-  </div>
-</div>
-{% endif %}
+
 {% endblock %}
 
 {% block script %}
