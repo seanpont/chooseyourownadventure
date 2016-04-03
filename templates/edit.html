@@ -34,10 +34,10 @@
     {% endfor %}
     <form class="choice-btn" action="{{ path_for('AddPage', story.key.id()) }}" method="post">
       <input type="hidden" name="current_page" value="{{ page.key.id() }}">
-      <button type="submit" class="btn btn-default">Add page</button>
+      <button type="submit" class="btn btn-primary">Add page</button>
     </form>
     <form class="choice-btn" action="{{ path_for('DeletePage', story.key.id()) }}" method="post">
-      <button type="submit" class="btn btn-danger">Delete page</button>
+      <button type="submit" class="btn btn-default">Delete page</button>
     </form>
   </div>
 
@@ -47,7 +47,7 @@
 
     <!-- Content editor -->
     <div class="form-group">
-      <textarea id="page-text" class="form-control" rows="12" name="text">{{ page.text }}</textarea>
+      <textarea id="page-text" class="form-control" rows="12" name="text" placeholder="Page Content">{{ page.text }}</textarea>
     </div>
 
     <!-- Choice editor -->
@@ -68,10 +68,10 @@
     </div>
     {% endfor %}
     <form class="choice-btn" action="{{ path_for('AddChoice', story.key.id(), page.key.id()) }}" method="post">
-      <button type="submit" class="btn btn-default">Add Choice</button>
+      <button type="submit" class="btn btn-primary">Add Choice</button>
     </form>
     <form class="choice-btn" action="{{ path_for('DeleteChoice', story.key.id(), page.key.id()) }}" method="post">
-      <button type="submit" class="btn btn-danger">Delete Choice</button>
+      <button type="submit" class="btn btn-default">Delete Choice</button>
     </form>
 
   </div>

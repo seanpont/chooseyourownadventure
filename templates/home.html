@@ -20,7 +20,7 @@
   </a>
   {% if story.author == user %}
   <p>
-    <a class="btn btn-default" href="{{ path_for('EditPage', story.key.id(), story.page1_key.id()) }}"
+    <a class="btn btn-primary" href="{{ path_for('EditPage', story.key.id(), story.page1_key.id()) }}"
        role="button">Edit</a>
   </p>
   {% endif %}

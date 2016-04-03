@@ -91,7 +91,6 @@ class Home(BaseHandler):
   def get(self):
     stories = Story.query().fetch()
     self.render_html('home.html',
-                     show_create=(self.user is not None),
                      stories=stories)
 
 
